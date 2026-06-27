@@ -1,11 +1,17 @@
 
 import { GoogleGenAI, Type } from "@google/genai";
 
-// Initialize the Google GenAI client using the API key from environment variables.
-// Always use the named parameter and avoid fallbacks to empty strings.
-const ai = new GoogleGenAI({ apiKey: process.env.API_KEY });
+// Helper to lazily initialize the Google GenAI client safely.
+const getAIClient = () => {
+  const key = process.env.API_KEY || process.env.GEMINI_API_KEY;
+  if (!key) {
+    throw new Error("Gemini API key is not configured. Please add GEMINI_API_KEY to your Vercel Environment Variables.");
+  }
+  return new GoogleGenAI({ apiKey: key });
+};
 
 export const factCheck = async (claim: string) => {
+  const ai = getAIClient();
   const response = await ai.models.generateContent({
     model: 'gemini-3-flash-preview',
     contents: `Verify the following claim in the context of Ghana. Provide a verdict (True, False, or Misleading), a concise explanation, and potential reliable sources to check. Claim: "${claim}"`,
@@ -28,6 +34,7 @@ export const factCheck = async (claim: string) => {
 };
 
 export const getCivicLesson = async (topic: string) => {
+  const ai = getAIClient();
   const response = await ai.models.generateContent({
     model: 'gemini-3-flash-preview',
     contents: `Explain "${topic}" in the context of the Ghanaian local government system. Use simple language suitable for a 15-year-old. Include a quiz with 3 multiple-choice questions.`,

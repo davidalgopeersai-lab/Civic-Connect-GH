@@ -1,0 +1,23 @@
+/* CivicConnect GH Stylesheet */
+:root {
+  --color-ghana-red: #CE1126;
+  --color-ghana-yellow: #FCD116;
+  --color-ghana-green: #006B3F;
+}
+
+/* Base custom interactive transitions */
+button, a {
+  transition-property: color, background-color, border-color, text-decoration-color, fill, stroke, opacity, box-shadow, transform, filter, backdrop-filter;
+  transition-timing-function: cubic-bezier(0.4, 0, 0.2, 1);
+  transition-duration: 150ms;
+}
+
+/* Animations for clean presentation and loading states */
+@keyframes fadeIn {
+  from { opacity: 0; transform: translateY(8px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
+.animate-fade-in {
+  animation: fadeIn 0.4s ease-out forwards;
+}

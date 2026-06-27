@@ -1,6 +1,6 @@
 
 import React, { useState, useRef, useEffect } from 'react';
-import { GoogleGenAI } from "@google/genai";
+import { getChatResponse } from '../services/geminiService';
 import { translations } from '../translations';
 
 interface CivicChatProps {
@@ -27,17 +27,8 @@ const CivicChat: React.FC<CivicChatProps> = ({ lang }) => {
     setIsTyping(true);
 
     try {
-      const ai = new GoogleGenAI({ apiKey: process.env.API_KEY });
-      const response = await ai.models.generateContent({
-        model: 'gemini-3-flash-preview',
-        contents: [...messages.map(m => ({ role: m.role, parts: [{ text: m.text }] })), { role: 'user', parts: [{ text: userMsg }] }],
-        config: {
-          systemInstruction: `You are a helpful Ghanaian Local Government Official. You are knowledgeable about District Assemblies and the 1992 Constitution. 
-          Respond in ${lang === 'tw' ? 'Twi' : 'English'}. Keep answers concise. Use 'Akwaaba' or 'Medaase' naturally.`,
-        }
-      });
-
-      setMessages(prev => [...prev, { role: 'model', text: response.text || "Connection error." }]);
+      const reply = await getChatResponse(userMsg, messages, lang);
+      setMessages(prev => [...prev, { role: 'model', text: reply }]);
     } catch (error) {
       console.error(error);
       setMessages(prev => [...prev, { role: 'model', text: "Service unavailable offline." }]);

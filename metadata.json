@@ -1,0 +1,8 @@
+{
+  "name": "CivicConnect GH",
+  "description": "A comprehensive civic engagement platform for Ghana, featuring community reporting, civic education, service directory, and fact-checking.",
+  "requestFramePermissions": [
+    "camera",
+    "geolocation"
+  ]
+}

@@ -162,10 +162,11 @@ export const factCheck = async (claim: string) => {
 
   try {
     const response = await ai.models.generateContent({
-      model: 'gemini-3.5-flash',
+      model: 'gemini-2.5-flash',
       contents: `Verify the following claim in the context of Ghana. Provide a verdict (True, False, or Misleading), a concise explanation, and potential reliable sources to check. Claim: "${claim}"`,
       config: {
         temperature: 0.1,
+        tools: [{ googleSearch: {} }], // Enable active Google Search Grounding for maximum factual accuracy and real-time freshness!
         responseMimeType: "application/json",
         responseSchema: {
           type: Type.OBJECT,
@@ -199,10 +200,11 @@ export const getCivicLesson = async (topic: string) => {
 
   try {
     const response = await ai.models.generateContent({
-      model: 'gemini-3.5-flash',
+      model: 'gemini-2.5-flash',
       contents: `Explain "${topic}" in the context of the Ghanaian local government system. Use simple language suitable for a 15-year-old. Include a quiz with 3 multiple-choice questions.`,
       config: {
-        temperature: 0.7,
+        temperature: 0.5,
+        tools: [{ googleSearch: {} }], // Enable Google Search Grounding for up-to-date accurate educational context!
         responseMimeType: "application/json",
         responseSchema: {
           type: Type.OBJECT,
@@ -323,16 +325,18 @@ export const getChatResponse = async (userMsg: string, history: Array<{ role: 'u
     }));
 
     const response = await ai.models.generateContent({
-      model: 'gemini-3.5-flash',
+      model: 'gemini-2.5-flash',
       contents: [...chatHistory, { role: 'user', parts: [{ text: userMsg }] }],
       config: {
-        temperature: 0.7,
+        temperature: 0.5,
+        tools: [{ googleSearch: {} }], // Enable active Google Search Grounding for ultimate factual accuracy on any general-purpose or up-to-date question!
         systemInstruction: `You are a highly knowledgeable, friendly general AI assistant with specialized expertise as a Ghanaian Local Government Official and Constitutional expert. 
         
         CRITICAL RULES:
-        1. While you are passionate about helping citizens understand District Assemblies, the 1992 Constitution, and public services, you MUST answer any generic or general-purpose questions the user asks (such as math, science, geography, language, history, general advice, coding, or creative writing) directly, accurately, and helpful.
-        2. DO NOT try to steer every general query back to the academy or local governance. Keep your conversation natural and answer the exact question asked.
-        3. Respond in ${lang === 'tw' ? 'Twi' : 'English'}. Keep answers concise, highly respectful, and warm. Use Ghanaian terms like 'Akwaaba' (Welcome) or 'Medaase' (Thank you) naturally where appropriate.`,
+        1. While you are passionate about helping citizens understand District Assemblies, the 1992 Constitution, and public services, you MUST answer any generic or general-purpose questions the user asks (such as math, science, geography, language, history, general advice, coding, or creative writing) directly, accurately, and helpfully.
+        2. You MUST use the Google Search tool results to verify and ground your answers in factual, real-time, up-to-date data.
+        3. DO NOT try to steer every general query back to the academy or local governance. Keep your conversation natural and answer the exact question asked.
+        4. Respond in ${lang === 'tw' ? 'Twi' : 'English'}. Keep answers concise, highly respectful, and warm. Use Ghanaian terms like 'Akwaaba' (Welcome) or 'Medaase' (Thank you) naturally where appropriate.`,
       }
     });
 

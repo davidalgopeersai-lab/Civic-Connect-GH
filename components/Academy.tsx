@@ -19,12 +19,14 @@ const Academy: React.FC<AcademyProps> = ({ lang }) => {
   const [selectedTopic, setSelectedTopic] = useState<string | null>(null);
   const [lesson, setLesson] = useState<any>(null);
   const [loading, setLoading] = useState(false);
+  const [quizAnswers, setQuizAnswers] = useState<Record<number, number>>({});
   const t = translations[lang];
 
   const fetchLesson = async (topic: string) => {
     // Immediate UI response: switch view first
     setSelectedTopic(topic);
     setLesson(null);
+    setQuizAnswers({});
     setLoading(true);
     
     try {
@@ -80,25 +82,52 @@ const Academy: React.FC<AcademyProps> = ({ lang }) => {
 
               <section className="mt-8 border-t border-slate-100 dark:border-slate-700 pt-8 space-y-6">
                 <h3 className="text-xl font-black text-slate-900 dark:text-white">{t.quickQuiz}</h3>
-                {lesson.quiz.map((q: any, i: number) => (
-                  <fieldset key={i} className="space-y-4 border-none p-0 m-0">
-                    <legend className="font-bold text-slate-800 dark:text-slate-200 mb-2">{i + 1}. {q.question}</legend>
-                    <div className="grid grid-cols-1 gap-2">
-                      {q.options.map((opt: string, idx: number) => (
-                        <button
-                          key={idx}
-                          onClick={() => {
-                            if (idx === q.correctAnswer) alert(t.correct);
-                            else alert(t.tryAgain);
-                          }}
-                          className="p-4 bg-slate-50 dark:bg-slate-900 rounded-2xl text-left text-sm font-medium hover:bg-slate-100 dark:hover:bg-slate-700 transition-colors border border-slate-100 dark:border-slate-700 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-green-700 dark:text-slate-100"
-                        >
-                          {opt}
-                        </button>
-                      ))}
-                    </div>
-                  </fieldset>
-                ))}
+                {lesson.quiz.map((q: any, i: number) => {
+                  const answered = quizAnswers[i] !== undefined;
+                  const selectedIdx = quizAnswers[i];
+                  return (
+                    <fieldset key={i} className="space-y-4 border-none p-0 m-0">
+                      <legend className="font-bold text-slate-800 dark:text-slate-200 mb-2">{i + 1}. {q.question}</legend>
+                      <div className="grid grid-cols-1 gap-2">
+                        {q.options.map((opt: string, idx: number) => {
+                          const isCorrect = idx === q.correctAnswer;
+                          const isUserSelection = selectedIdx === idx;
+                          
+                          let buttonStyles = "p-4 rounded-2xl text-left text-sm font-semibold transition-all border text-slate-800 dark:text-slate-100 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-green-700";
+                          let suffix = "";
+
+                          if (!answered) {
+                            buttonStyles += " bg-slate-50 dark:bg-slate-900 hover:bg-slate-100 dark:hover:bg-slate-800 border-slate-200 dark:border-slate-700 hover:scale-[1.01] active:scale-[0.99]";
+                          } else {
+                            if (isCorrect) {
+                              buttonStyles += " bg-emerald-50 dark:bg-emerald-950/30 text-emerald-800 dark:text-emerald-300 border-emerald-500 dark:border-emerald-600 font-bold";
+                              suffix = " ✅ " + t.correct;
+                            } else if (isUserSelection) {
+                              buttonStyles += " bg-rose-50 dark:bg-rose-950/30 text-rose-800 dark:text-rose-300 border-rose-500 dark:border-rose-600 font-bold";
+                              suffix = " ❌ " + t.tryAgain;
+                            } else {
+                              buttonStyles += " bg-slate-50/50 dark:bg-slate-900/50 opacity-40 border-slate-100 dark:border-slate-800 text-slate-400 dark:text-slate-600";
+                            }
+                          }
+
+                          return (
+                            <button
+                              key={idx}
+                              disabled={answered}
+                              onClick={() => {
+                                setQuizAnswers(prev => ({ ...prev, [i]: idx }));
+                              }}
+                              className={`${buttonStyles} flex items-center justify-between w-full`}
+                            >
+                              <span>{opt}</span>
+                              {suffix && <span className="text-xs font-black uppercase tracking-wider">{suffix}</span>}
+                            </button>
+                          );
+                        })}
+                      </div>
+                    </fieldset>
+                  );
+                })}
               </section>
             </>
           )}

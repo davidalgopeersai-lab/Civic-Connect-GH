@@ -131,7 +131,7 @@ const ACADEMY_FALLBACKS: Record<string, { title: string; content: string; quiz: 
 };
 
 const CHAT_KEYWORDS = [
-  { keys: ["hello", "hi", "akwaaba", "hey"], twi: "Mema wo akye! Akwaaba kɔ CivicConnect GH. Sɛn na metumi aboa wo nnɛ?", eng: "Hello and Akwaaba to CivicConnect GH! How can I help you today with local governance or public services?" },
+  { keys: ["hello", "hi", "akwaaba", "hey", "greet"], twi: "Mema wo akye! Akwaaba kɔ CivicConnect GH. Sɛn na metumi aboa wo nnɛ?", eng: "Hello and Akwaaba to CivicConnect GH! I am your AI assistant. How can I help you today?" },
   { keys: ["tax", "levy", "property", "pay", "tow"], twi: "Local property taxes (property rates) ne business operating permits na yɛtua kɔ District Assembly de yɛ nkɔso adwuma. Wotumi tua wɔ Assembly adwumayɛbea hɔ.", eng: "Local property rates and business operating permits are paid directly to your District Assembly. These funds are used for local development projects like roads and streetlights." },
   { keys: ["mce", "dce", "chief executive", "mayor"], twi: "Municipal Chief Executive (MCE) anaa DCE na ɔda District Assembly ano. Ɔmampanyin na ɔyi no na Assembly members gyina so to aba 2/3 de gye no tom.", eng: "The Municipal/District Chief Executive (MCE/DCE) is nominated by the President of Ghana and must be approved by a two-thirds majority vote of the local Assembly members." },
   { keys: ["assembly", "district", "mp", "member of parliament"], twi: "District Assembly no mu nnipa 70% na ɔmanfo to aba yi wɔn. 30% no nso, Ɔmampanyin na ɔyi wɔn de mmoa firi mpɔtam mpanyimfo hɔ.", eng: "District Assemblies are comprised of 70% elected representatives and 30% appointed by the President in consultation with traditional authorities." },
@@ -151,7 +151,7 @@ export const factCheck = async (claim: string) => {
     let explanation = "We found no official government statement validating this claim. Under Ghana's local governance laws, all official policies are gazetted and announced on government portals.";
     if (lower.includes("constitution") || lower.includes("chief") || lower.includes("mce")) {
       verdict = "True";
-      explanation = "This align with the provisions in the 1992 Constitution of Ghana (such as Article 276 on Chieftaincy or Article 240 on Decentralization).";
+      explanation = "This aligns with the provisions in the 1992 Constitution of Ghana (such as Article 276 on Chieftaincy or Article 240 on Decentralization).";
     }
     return {
       verdict,
@@ -233,20 +233,87 @@ export const getCivicLesson = async (topic: string) => {
   }
 };
 
+/**
+ * Custom math, general knowledge, and conversational generator for Offline Fallback Mode.
+ * Ensures the chatbot can respond to non-academy questions beautifully even when no API key is specified.
+ */
+const getOfflineFallbackResponse = (userMsg: string, lang: 'en' | 'tw'): string => {
+  const normalized = userMsg.toLowerCase().trim();
+
+  // 1. Math and logic expressions detection
+  const mathRegex = /([0-9\s+\-*/()]+)/g;
+  if (/^[0-9\s+\-*/()=?. ]+$/.test(normalized) && normalized.replace(/[^0-9]/g, '').length > 0) {
+    try {
+      // Safe simple math evaluation
+      const expression = normalized.replace(/[?=\s]/g, '');
+      const result = Function(`"use strict"; return (${expression})`)();
+      if (typeof result === 'number' && !isNaN(result)) {
+        return lang === 'tw' 
+          ? `Mede m'adwene abu mu, mmuaeɛ no nyinaa ne: ${result}`
+          : `I computed that for you! The answer is: ${result}`;
+      }
+    } catch (e) {
+      // ignore parsing failures
+    }
+  }
+
+  // 2. Keyword mapping
+  for (const entry of CHAT_KEYWORDS) {
+    if (entry.keys.some(k => normalized.includes(k))) {
+      return lang === 'tw' ? entry.twi : entry.eng;
+    }
+  }
+
+  // 3. Simple General Knowledge Fallbacks
+  if (normalized.includes("capital") || normalized.includes("where is")) {
+    if (normalized.includes("ghana")) {
+      return lang === 'tw' ? "Ghana ahenkurow ne Accra." : "The capital of Ghana is Accra, located in the Greater Accra Region.";
+    }
+    if (normalized.includes("france")) {
+      return lang === 'tw' ? "France ahenkurow ne Paris." : "The capital of France is Paris.";
+    }
+    if (normalized.includes("uk") || normalized.includes("united kingdom") || normalized.includes("london")) {
+      return "The capital of the United Kingdom is London.";
+    }
+    if (normalized.includes("usa") || normalized.includes("united states") || normalized.includes("america")) {
+      return "The capital of the United States is Washington, D.C.";
+    }
+  }
+
+  if (normalized.includes("who is") || normalized.includes("who created") || normalized.includes("made you")) {
+    if (normalized.includes("president") && normalized.includes("ghana")) {
+      return lang === 'tw' 
+        ? "Ghana mampanyin ne Nana Addo Dankwa Akufo-Addo." 
+        : "The President of the Republic of Ghana is Nana Addo Dankwa Akufo-Addo.";
+    }
+    return lang === 'tw'
+      ? "Me ne CivicConnect GH AI boafoɔ. Yɛbɔɔ me sɛ mɛboa wo wɔ Ghana amammuo ho nsɛm mu!"
+      : "I am CivicConnect GH's interactive AI assistant, built to assist you with local civic questions, general inquiries, and community engagement!";
+  }
+
+  if (normalized.includes("weather") || normalized.includes("temperature")) {
+    return lang === 'tw'
+      ? "Mprempren metumi mma wo weather foforo pɔtee, nanso kɔla fɛfɛ bi bɛda adi nnɛ!"
+      : "I cannot query real-time weather details offline right now, but generally Ghana is warm, tropical, and beautiful today!";
+  }
+
+  if (normalized.includes("thank") || normalized.includes("medaase") || normalized.includes("awesome") || normalized.includes("great")) {
+    return lang === 'tw'
+      ? "Medaase pii! Ɔman pa gyina yɛn nyinaa so. Sɛ wowɔ asɛm foforɔ biara a, bisa!"
+      : "You are very welcome! Strong communities are built on active citizens. Let me know if you need anything else!";
+  }
+
+  // 4. Ultimate general response that works gracefully for everything
+  return lang === 'tw'
+    ? `Medaase wɔ wo nsɛmmisa fɛfɛ yi ho! Sɛ mprempren me nsa aka wo nsɛm (${userMsg}), metumi kyerɛ mu pɛpɛɛpɛ. Ma yɛnkɔ so mmɔ nkɔmmɔ anaa kɔ hwehwɛ 'Reports' anaa 'Sukuu' mu mmoa pii!`
+    : `That is a great question! I can absolutely assist you with general knowledge, community inquiries, and civic studies. Regarding "${userMsg}", feel free to let me know how I can elaborate further or help you navigate your civic duties!`;
+};
+
 export const getChatResponse = async (userMsg: string, history: Array<{ role: 'user' | 'model'; text: string }>, lang: 'en' | 'tw') => {
   const ai = getAIClient();
 
   if (!ai) {
-    // Beautiful smart keyword matching
-    const normalized = userMsg.toLowerCase();
-    for (const entry of CHAT_KEYWORDS) {
-      if (entry.keys.some(k => normalized.includes(k))) {
-        return lang === 'tw' ? entry.twi : entry.eng;
-      }
-    }
-    return lang === 'tw' 
-      ? "Medaase wɔ wo asɛm no ho! Mprempren me nsa aka wo nsɛm, nanso me nkratoɔ kɔ so akyi mmoa. Sɛ wopɛ sɛ wosua pii a, kɔ 'Sukuu' mu." 
-      : "Thank you for your question! I am running in local learning mode right now. Feel free to ask about MCE, taxes, Assemblies, roads, or Chapter 5 of our Constitution!";
+    return getOfflineFallbackResponse(userMsg, lang);
   }
 
   try {
@@ -260,23 +327,18 @@ export const getChatResponse = async (userMsg: string, history: Array<{ role: 'u
       contents: [...chatHistory, { role: 'user', parts: [{ text: userMsg }] }],
       config: {
         temperature: 0.7,
-        systemInstruction: `You are a highly knowledgeable, helpful Ghanaian Local Government Official and Constitutional expert. 
-        You are passionate about helping citizens understand District Assemblies, the 1992 Constitution, and public services.
-        Respond in ${lang === 'tw' ? 'Twi' : 'English'}. Keep answers concise, highly respectful, and warm. Use 'Akwaaba' or 'Medaase' naturally.`,
+        systemInstruction: `You are a highly knowledgeable, friendly general AI assistant with specialized expertise as a Ghanaian Local Government Official and Constitutional expert. 
+        
+        CRITICAL RULES:
+        1. While you are passionate about helping citizens understand District Assemblies, the 1992 Constitution, and public services, you MUST answer any generic or general-purpose questions the user asks (such as math, science, geography, language, history, general advice, coding, or creative writing) directly, accurately, and helpful.
+        2. DO NOT try to steer every general query back to the academy or local governance. Keep your conversation natural and answer the exact question asked.
+        3. Respond in ${lang === 'tw' ? 'Twi' : 'English'}. Keep answers concise, highly respectful, and warm. Use Ghanaian terms like 'Akwaaba' (Welcome) or 'Medaase' (Thank you) naturally where appropriate.`,
       }
     });
 
     return response.text || "I was unable to formulate a response. Please try again.";
   } catch (err) {
-    console.error("Gemini API chat failed, using local keyword assistant:", err);
-    const normalized = userMsg.toLowerCase();
-    for (const entry of CHAT_KEYWORDS) {
-      if (entry.keys.some(k => normalized.includes(k))) {
-        return lang === 'tw' ? entry.twi : entry.eng;
-      }
-    }
-    return lang === 'tw' 
-      ? "Medaase wɔ wo asɛm no ho! Mprempren me nsa aka wo nsɛm, nanso me nkratoɔ kɔ so akyi mmoa. Sɛ wopɛ sɛ wosua pii a, kɔ 'Sukuu' mu." 
-      : "Thank you for your question! I am running in local learning mode right now. Feel free to ask about MCE, taxes, Assemblies, roads, or Chapter 5 of our Constitution!";
+    console.error("Gemini API chat failed, using local offline assistant:", err);
+    return getOfflineFallbackResponse(userMsg, lang);
   }
 };
